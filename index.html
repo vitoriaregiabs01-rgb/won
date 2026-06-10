@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DSV — WON Markets Brasil</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f5f7;--surface:#fff;--s2:#f8f9fb;--border:#e2e4e9;
+  --text:#1a1d23;--t2:#6b7280;--t3:#9ca3af;
+  --blue:#185FA5;--bl:#E6F1FB;--bm:#378ADD;
+  --green:#3B6D11;--gl:#EAF3DE;--gm:#639922;
+  --amber:#BA7517;--al:#FAEEDA;--am:#EF9F27;
+  --red:#A32D2D;--rl:#FCEBEB;--rm:#E24B4A;
+  --purple:#534AB7;--pl:#EEEDFE;--pm:#7F77DD;
+  --teal:#0F6E56;--tl:#E1F5EE;--tm:#1D9E75;
+  --r:8px;--rl2:12px
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;flex-wrap:wrap;gap:8px}
+.hdr-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{font-size:17px;font-weight:800;color:var(--blue);letter-spacing:-.5px}
+.hdr-sub{font-size:13px;color:var(--t2)}
+.wbadge{background:var(--bl);color:var(--blue);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.hdr-r{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.view-tabs{display:flex;gap:2px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:2px}
+.vtab{background:none;border:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--t2);transition:all .15s;white-space:nowrap}
+.vtab.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.vtab:hover:not(.active){background:var(--surface);color:var(--text)}
+.btn-primary{background:var(--blue);color:#fff;border:none;padding:7px 13px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer}
+.btn-primary:hover{background:#0C447C}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--t2);padding:6px 11px;border-radius:var(--r);font-size:12px;cursor:pointer}
+.btn-ghost:hover{background:var(--s2)}
+#fileInput,#prevInput,#ytdInput{display:none}
+.fbar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:2px}
+.fl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
+select{font-size:12px;padding:5px 9px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--text);cursor:pointer;min-width:105px}
+.fsep{width:1px;height:30px;background:var(--border);align-self:center;margin:0 1px}
+.rbtn{font-size:12px;color:var(--t2);background:none;border:1px solid var(--border);padding:5px 10px;border-radius:var(--r);cursor:pointer}
+.rbtn:hover{background:var(--s2)}
+.main{padding:16px 24px;max-width:1520px;margin:0 auto}
+.kgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl2);padding:13px 15px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.kpi.blue::before{background:var(--bm)}.kpi.green::before{background:var(--gm)}
+.kpi.amber::before{background:var(--am)}.kpi.red::before{background:var(--rm)}
+.kpi.purple::before{background:var(--pm)}.kpi.teal::before{background:var(--tm)}
+.kl{font-size:11px;color:var(--t2);font-weight:500;margin-bottom:4px}
+.kv{font-size:20px;font-weight:700;line-height:1.1}
+.kpi.blue .kv{color:var(--blue)}.kpi.green .kv{color:var(--green)}
+.kpi.amber .kv{color:var(--amber)}.kpi.red .kv{color:var(--red)}
+.kpi.purple .kv{color:var(--purple)}.kpi.teal .kv{color:var(--teal)}
+.ks{font-size:11px;color:var(--t3);margin-top:2px}
+.delta{font-size:11px;font-weight:600;padding:1px 6px;border-radius:10px;display:inline-block;margin-top:3px}
+.delta.up{background:#EAF3DE;color:#3B6D11}.delta.dn{background:#FCEBEB;color:#A32D2D}.delta.neu{background:#f3f4f6;color:#6b7280}
+.vkgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.vkpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl2);padding:12px 15px;display:flex;align-items:center;gap:12px}
+.vk-icon{width:36px;height:36px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.vkl{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.vkv{font-size:18px;font-weight:700}
+.vks{font-size:11px;color:var(--t3)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.row3{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px}
+.row4{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl2);padding:15px 17px}
+.ct{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.cs{font-size:11px;color:var(--t3);margin-bottom:11px}
+.branch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.branch-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.bc-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:7px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.bc-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px}
+.bc-label{color:var(--t2)}
+.bc-val{font-weight:600;color:var(--text)}
+.bc-pill{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}
+.segpill{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap}
+.seg-comm{background:var(--al);color:var(--amber);border:1px solid rgba(186,117,23,.18)}
+.seg-reefer{background:var(--tl);color:var(--teal);border:1px solid rgba(15,110,86,.18)}
+.seg-p01{background:var(--pl);color:var(--purple);border:1px solid rgba(83,74,183,.18)}
+
+.pill-sea{background:var(--bl);color:var(--blue)}
+.pill-air{background:var(--gl);color:var(--green)}
+.pill-fcl{background:#EEF2FF;color:#3730A3}
+.pill-lcl{background:#F0FDF4;color:#166534}
+.otbl{width:100%;border-collapse:collapse;font-size:12px}
+.otbl th{color:var(--t3);font-weight:600;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.otbl td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.otbl tr:last-child td{border-bottom:none}
+.otbl tr.clickable:hover td{background:var(--s2);cursor:pointer}
+.hotb{background:#fff3cd;color:#7d4e00;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;border:1px solid #ffc107;white-space:nowrap}
+.rbar{display:inline-block;vertical-align:middle;height:5px;background:var(--bm);border-radius:3px;margin-right:5px}
+.rr{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
+.rr:last-child{border-bottom:none}
+.rn{font-size:12px;font-weight:500;width:70px;flex-shrink:0}
+.rbg{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+.rf{height:100%;border-radius:4px}
+.rc{font-size:11px;color:var(--t2);width:52px;text-align:right;flex-shrink:0}
+.fr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.fl2{font-size:11px;color:var(--t2);width:140px;flex-shrink:0}
+.fbg{flex:1;height:22px;background:var(--bg);border-radius:4px;overflow:hidden}
+.ff{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 8px}
+.ft{font-size:11px;font-weight:700;color:#fff}
+.fm{font-size:11px;color:var(--t2);width:90px;text-align:right;flex-shrink:0}
+.opp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:10px;max-height:500px;overflow-y:auto;padding-right:4px}
+.opp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;cursor:pointer;transition:border-color .15s}
+.opp-card:hover{border-color:var(--bm)}
+.opp-card.hot-card{border-left:3px solid #ffc107}
+.opp-card.reefer-card{border-left:3px solid var(--tm)}
+.opp-card.project-card{border-left:3px solid var(--purple)}
+.opp-card.comm-card{border-left:3px solid var(--am)}
+.special-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.special-grid .opp-grid{grid-template-columns:1fr;max-height:420px}
+@media(max-width:1100px){.special-grid{grid-template-columns:1fr}}
+.oc-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.3}
+.oc-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px}
+.oc-rev{font-size:13px;font-weight:700;color:var(--green)}
+.oc-meta{font-size:11px;color:var(--t3);margin-top:3px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--rl2);padding:22px;width:100%;max-width:860px;margin:auto}
+.modal-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px}
+.modal-title{font-size:15px;font-weight:700;line-height:1.4}
+.close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--t2);line-height:1;padding:0 4px;flex-shrink:0}
+.owner-kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.owner-kpi{background:var(--s2);border-radius:var(--r);padding:11px 13px}
+.okl{font-size:11px;color:var(--t2);margin-bottom:3px}
+.okv{font-size:17px;font-weight:700}
+.land{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--rl2);padding:32px 48px;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.drop-zone:hover,.drop-zone.over{border-color:var(--bm);background:var(--bl)}
+.info-box{background:var(--bl);border-radius:var(--r);padding:12px 16px;font-size:12px;color:#0C447C;max-width:460px;text-align:left;line-height:1.75}
+.ytd-bar{background:var(--pl);border-radius:var(--r);padding:8px 14px;font-size:11px;color:var(--purple);margin-bottom:12px}
+@media(max-width:1100px){.kgrid{grid-template-columns:repeat(3,1fr)}.row2{grid-template-columns:1fr 1fr}.row3{grid-template-columns:1fr}}
+@media(max-width:700px){.kgrid{grid-template-columns:repeat(2,1fr)}.vkgrid{grid-template-columns:repeat(2,1fr)}.row2,.row4{grid-template-columns:1fr}.hdr-sub{display:none}}
+@media print{.hdr,.fbar{position:static}.btn-primary,.btn-ghost,.rbtn,.view-tabs{display:none}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="logo">DSV</div>
+    <div class="hdr-sub">WON Markets Brasil</div>
+    <span class="wbadge" id="wBadge">Aguardando dados</span>
+  </div>
+  <div class="hdr-r">
+    <div class="view-tabs">
+      <button class="vtab active" id="tab-semana" onclick="setView('semana')">Semana Anterior</button>
+      <button class="vtab" id="tab-pipeline" onclick="setView('pipeline')">MTD</button>
+      <button class="vtab" id="tab-ytd" onclick="setView('ytd')">YTD</button>
+    </div>
+    <span style="font-size:11px;color:var(--t3)" id="dataInfo"></span>
+    <button class="btn-ghost" id="btnPrev" onclick="document.getElementById('prevInput').click()" style="display:none">+ Semana ant. (manual)</button>
+    <button class="btn-ghost" id="btnYtd" onclick="document.getElementById('ytdInput').click()" style="display:none">+ Adicionar semanas</button>
+    <button class="btn-primary" onclick="document.getElementById('fileInput').click()">↑ Trocar Excel</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <input type="file" id="prevInput" accept=".xlsx,.xls">
+    <input type="file" id="ytdInput" accept=".xlsx,.xls" multiple>
+  </div>
+</div>
+
+<div class="fbar" id="fbar" style="display:none">
+  <div class="fg"><div class="fl">Division</div><select id="fd" onchange="render()"><option value="">Todas</option></select></div>
+  <div class="fg"><div class="fl">Branch</div><select id="fb" onchange="render()"><option value="">Todas</option></select></div>
+  <div class="fg"><div class="fl">Owner</div><select id="fo" onchange="render()"><option value="">Todos</option></select></div>
+  <div class="fg"><div class="fl">Stage</div><select id="fs" onchange="render()"><option value="">Todos</option></select></div>
+  <div class="fg"><div class="fl">Modal</div><select id="fm" onchange="render()"><option value="">Todos</option></select></div>
+  <div class="fg"><div class="fl">Sea Type</div>
+    <select id="fst" onchange="render()">
+      <option value="">FCL + LCL</option>
+      <option value="FCL">FCL</option>
+      <option value="LCL">LCL</option>
+    </select>
+  </div>
+  <div class="fg"><div class="fl">Market From</div><select id="ff" onchange="render()"><option value="">Todos</option></select></div>
+  <div class="fg"><div class="fl">Market To</div><select id="ft" onchange="render()"><option value="">Todos</option></select></div>
+  <div class="fg"><div class="fl">HOT</div>
+    <select id="fh" onchange="render()">
+      <option value="">Todos</option>
+      <option value="1">Só HOT 🔥</option>
+      <option value="0">Sem HOT</option>
+    </select>
+  </div>
+  <div class="fg"><div class="fl">COMMODITIE</div><select id="fc" onchange="render()"><option value="">Todos</option><option value="1">Só COMMODITIE 📦</option></select></div>
+  <div class="fg"><div class="fl">REEFER</div><select id="fr" onchange="render()"><option value="">Todos</option><option value="1">Só REEFER ❄️</option></select></div>
+  <div class="fg"><div class="fl">PROJETOS</div><select id="fp" onchange="render()"><option value="">Todos</option><option value="1">Só P01 🚀</option></select></div>
+  <div class="fsep"></div>
+  <button class="rbtn" onclick="clearFilters()">↺ Limpar</button>
+</div>
+
+<div class="main" id="main">
+  <div class="land" id="land">
+    <div style="font-size:42px;margin-bottom:14px">📊</div>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:8px">WON Markets Dashboard — DSV Brasil</h2>
+    <p style="font-size:13px;color:var(--t2);max-width:380px;line-height:1.6;margin-bottom:20px">O dashboard abre sozinho com a base WON do GitHub. A visão principal mostra sempre a semana anterior, baseada na maior semana encontrada na base atual.</p>
+    <div class="drop-zone" id="dz" onclick="document.getElementById('fileInput').click()">
+      <div style="font-size:13px;color:var(--t2)">Clique aqui ou arraste um <strong>.xlsx</strong></div>
+    </div>
+    <div class="info-box">
+      <strong>💡 Estrutura de pastas no GitHub:</strong><br>
+      <code>data/current.xlsx</code> — base WON atual (troca todo dia)<br>
+      <code>data/previous.xlsx</code> — semana anterior (troca 1x por semana)<br>
+      <code>data/week_01.xlsx</code>, <code>week_02.xlsx</code>... — histórico YTD<br><br>
+      <strong>Modos:</strong> Semana Anterior = maior semana da base menos 1 · MTD = do dia 01 até a maior data WON da base · YTD = ano todo · filtros: COMM, REEFER e P01
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ownerModal"><div class="modal" id="ownerModalContent"></div></div>
+<div class="overlay" id="oppModal"><div class="modal" id="oppModalContent"></div></div>
+
+<script>
+let D=[],P=[],YTD=[],CH={},VIEW='semana';
+const $=id=>document.getElementById(id);
+const DEFAULT='./data/current.xlsx';
+const PREVIOUS='./data/previous.xlsx';
+const YTD_FILES=Array.from({length:52},(_,i)=>`./data/week_${String(i+1).padStart(2,'0')}.xlsx`);
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  let loadedCurrent=false, loadedPrevious=false, loadedWeeks=0;
+  try{
+    const r=await fetch(DEFAULT,{cache:'no-store'});
+    if(r.ok){loadBuf(await r.arrayBuffer(),false,true);loadedCurrent=true;}
+  }catch(e){}
+  try{
+    const r=await fetch(PREVIOUS,{cache:'no-store'});
+    if(r.ok){
+      P=parseXLSX(await r.arrayBuffer());
+      loadedPrevious=true;
+    }
+  }catch(e){}
+  for(const f of YTD_FILES){
+    try{
+      const r=await fetch(f,{cache:'no-store'});
+      if(r.ok){
+        YTD.push(...parseXLSX(await r.arrayBuffer()));
+        loadedWeeks++;
+      }
+    }catch(e){}
+  }
+  if(loadedCurrent) showToast('Pipeline atual carregado ✓');
+  if(loadedPrevious) showToast('Semana anterior carregada automaticamente ✓');
+  if(loadedWeeks) showToast('YTD carregado: '+loadedWeeks+' semana(s)');
+  if(!loadedCurrent){
+    showToast('Arquivo padrão não encontrado: data/current.xlsx');
+  }
+});
+
+function parseXLSX(buf){
+  const wb=XLSX.read(buf,{type:'array',cellDates:true});
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}).map(parseRow);
+}
+function loadBuf(buf,isPrev,isAuto){
+  const rows=parseXLSX(buf);
+  if(isPrev){P=rows;showToast('Semana anterior ✓');render();return;}
+  D=rows;buildFilters();
+  $('fbar').style.display='flex';$('land').style.display='none';
+  updateBadge();
+  $('dataInfo').textContent=D.length.toLocaleString('pt-BR')+' markets';
+  if(isAuto)showToast('Dados carregados ✓');
+  render();
+}
+const fromFile=(file,isPrev)=>{const r=new FileReader();r.onload=e=>loadBuf(e.target.result,isPrev,false);r.readAsArrayBuffer(file)};
+$('fileInput').onchange=e=>{if(e.target.files[0])fromFile(e.target.files[0],false)};
+$('prevInput').onchange=e=>{if(e.target.files[0])fromFile(e.target.files[0],true)};
+$('ytdInput').onchange=e=>{
+  Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{YTD.push(...parseXLSX(ev.target.result));showToast('YTD: '+YTD.length.toLocaleString('pt-BR')+' registros');if(VIEW==='ytd')render()};r.readAsArrayBuffer(f)});
+};
+const dz=$('dz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files[0])fromFile(e.dataTransfer.files[0],false)});
+
+function parseRow(r){
+  const opp=cleanText(getCol(r,['Opportunity','Opportunity Name','Market','Market Name'])),div=cleanText(getCol(r,['Division (freight)','Division','Division freight']));
+  const fcl=parseNumAny(getCol(r,['Potential Sea FCL Volume (Teus)']));
+  const lcl=parseNumAny(getCol(r,['Potential Sea LCL Volume (cbm)']));
+  const airkg=parseNumAny(getCol(r,['Potential Air Volume (Kgs)']));
+  const actualClose=parseDateAny(getCol(r,['Actual Close Date (Opportunity) (Opportunity)','Actual Close Date','Won Date','Close Date Actual']));
+  const modified=parseDateAny(getCol(r,['(Do Not Modify) Modified On','Modified On']));
+  const expectedClose=parseDateAny(getCol(r,['Expected close date','Close Date (Exp) (Opportunity) (Opportunity)','Close Date']));
+  const mtdDate=actualClose; // usar somente a data real de fechamento WON; não usar Modified On/Expected Close para contagem semanal/MTD
+  let seaType='';
+  if(div==='Sea'||div.toLowerCase().includes('sea')){
+    seaType=fcl>0&&lcl===0?'FCL':lcl>0&&fcl===0?'LCL':fcl>0&&lcl>0?'FCL+LCL':'FCL';
+  }
+  return{opp,div,
+    owner:normalizeOwner(getCol(r,['Owner','Owner Name','Opportunity Owner','Air & Sea Owner','Air Sea Owner'])),
+    branch:cleanText(getCol(r,['Branch (Created By) (User)','Branch','Branch Created By User'])),
+    stage:cleanText(getCol(r,['Funnel Stage Name (Opportunity) (Opportunity)','Funnel Stage Name','Stage','Pipeline Phase (Opportunity) (Opportunity)','Pipeline Phase'])),
+    account:cleanText(getCol(r,['Account','Account Name','Customer','Customer Name'])),
+    mfrom:cleanText(getCol(r,['Market From','From Market'])),
+    mto:cleanText(getCol(r,['Market To','To Market'])),
+    paymentType:cleanText(getCol(r,['Payment type','Payment Type'])),
+    claimType:cleanText(getCol(r,['Claim Type','Claim type'])),
+    rev:parseNumAny(getCol(r,['Potential Revenue (Base)','Potential Revenue'])),
+    modified,
+    closeDate:expectedClose,
+    actualClose,
+    mtdDate,
+    hot:opp.toUpperCase().includes('HOT'),
+    comm:isTrueFlag(r['COMMODITIE'])||isTrueFlag(r['COMM']),
+    reefer:isTrueFlag(r['REEFER']),
+    project:isTrueFlag(r['PROJETOS'])||isTrueFlag(r['P01']),
+    modal:getModal(div),seaType,fcl,lcl,airkg
+  };
+}
+function getModal(d){return d==='Sea'?'Sea':d==='Air'?'Air':d.includes('Road')?'Road':d}
+function getWeek(d){const s=new Date(d.getFullYear(),0,1);return Math.ceil(((d-s)/86400000+s.getDay()+1)/7)}
+function fBRL(v){if(v>=1e9)return'R$ '+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'R$ '+(v/1e6).toFixed(1)+'M';if(v>=1e3)return'R$ '+(v/1e3).toFixed(0)+'K';return'R$ '+v.toFixed(0)}
+function fNum(v){if(v>=1e6)return(v/1e6).toFixed(1)+'M';if(v>=1e3)return(v/1e3).toFixed(1)+'K';return Math.round(v).toLocaleString('pt-BR')}
+function daysDiff(a,b){return a&&b?Math.round((b-a)/86400000):null}
+function isTrueFlag(v){const x=String(v??'').trim().toLowerCase();return x==='true'||x==='yes'||x==='sim'||x==='1'||x==='x'}
+function cleanText(v){return String(v??'').replace(/[\u00A0\u200B-\u200D\uFEFF]/g,' ').replace(/\s+/g,' ').trim()}
+function parseNumAny(v){
+  if(v===null||v===undefined||v==='')return 0;
+  if(typeof v==='number')return Number.isFinite(v)?v:0;
+  let t=String(v).trim().replace(/\s/g,'');
+  if(!t)return 0;
+  if(t.includes(',')&&t.includes('.')){const c=t.lastIndexOf(','),d=t.lastIndexOf('.');t=c>d?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'');}
+  else if(t.includes(',')){t=t.replace(',','.')}
+  const n=Number(t.replace(/[^0-9.\-]/g,''));
+  return Number.isFinite(n)?n:0;
+}
+function parseDateAny(v){
+  if(!v)return null;
+  if(v instanceof Date && !isNaN(v))return new Date(v.getFullYear(),v.getMonth(),v.getDate());
+  if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400*1000));return isNaN(d)?null:new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+  const s=String(v).trim();
+  let d=null;
+  const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(m){d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));}
+  else {d=new Date(s);}
+  return d && !isNaN(d)?new Date(d.getFullYear(),d.getMonth(),d.getDate()):null;
+}
+function fmtDateBR(d){return d?d.toLocaleDateString('pt-BR'):'—'}
+function getMaxDataDate(rows){const dates=(rows||[]).map(r=>r.mtdDate).filter(d=>d instanceof Date&&!isNaN(d));if(!dates.length)return null;return new Date(Math.max(...dates.map(d=>d.getTime())))}
+function monthToDateRows(rows){const max=getMaxDataDate(rows);if(!max)return rows||[];const start=new Date(max.getFullYear(),max.getMonth(),1);return (rows||[]).filter(r=>r.mtdDate instanceof Date && r.mtdDate>=start && r.mtdDate<=max)}
+function startOfSundayWeek(d){
+  const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  x.setDate(x.getDate()-x.getDay()); // domingo como primeiro dia da semana
+  return x;
+}
+function previousWeekInfo(rows){
+  const max=getMaxDataDate(rows);
+  if(!max)return null;
+  const currentStart=startOfSundayWeek(max);
+  const currentEnd=new Date(currentStart); currentEnd.setDate(currentEnd.getDate()+6);
+  const prevStart=new Date(currentStart); prevStart.setDate(prevStart.getDate()-7);
+  const prevEnd=new Date(prevStart); prevEnd.setDate(prevEnd.getDate()+6);
+  return {start:prevStart,end:prevEnd,currentStart,currentEnd,max};
+}
+function previousWeekRows(rows){
+  const info=previousWeekInfo(rows);
+  if(!info)return rows||[];
+  return (rows||[]).filter(r=>{
+    if(!(r.mtdDate instanceof Date)||isNaN(r.mtdDate))return false;
+    return r.mtdDate>=info.start && r.mtdDate<=info.end;
+  });
+}
+function updateBadge(){
+  if(!D.length)return;
+  if(VIEW==='semana'){
+    const wi=previousWeekInfo(D);
+    $('wBadge').textContent=wi?'Semana anterior · '+fmtDateBR(wi.start)+' a '+fmtDateBR(wi.end):'Semana Anterior';
+  }
+  else if(VIEW==='pipeline'){const maxD=getMaxDataDate(D);$('wBadge').textContent=maxD?'MTD até '+fmtDateBR(maxD):'MTD';}
+  else {$('wBadge').textContent='YTD';}
+}
+function esc(v){return cleanText(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function volumeValue(r){return (r.fcl||0)+(r.lcl||0)+(r.airkg||0)}
+function normKey(v){return cleanText(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'')}
+function normalizeOwner(v){
+  const name=cleanText(v);
+  const aliases={
+    'meireflorioe':'Meire Florio',
+    'meireflorio':'Meire Florio',
+    'andrebertti':'Andre Bertti',
+    'gabrielhonorato':'Gabriel Honorato',
+    'renanalves':'Renan Alves'
+  };
+  return aliases[normKey(name)]||name;
+}
+function getCol(r,names){
+  const norm=s=>cleanText(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  const wanted=names.map(norm);
+  for(const k of Object.keys(r)){if(wanted.includes(norm(k)))return r[k]}
+  for(const k of Object.keys(r)){const nk=norm(k);if(wanted.some(w=>nk.includes(w)||w.includes(nk)))return r[k]}
+  return '';
+}
+const REQUIRED_OWNERS=['Gabriel Honorato','Andre Bertti','Meire Florio','Renan Alves','Sarita Oliveira','Thalles Basilio'];
+const TODAY=new Date();
+
+function setView(v){
+  VIEW=v;
+  document.querySelectorAll('.vtab').forEach(t=>t.classList.remove('active'));
+  $('tab-'+v).classList.add('active');
+  $('btnPrev').style.display=v==='semana'?'':'none';
+  $('btnYtd').style.display=v==='ytd'?'':'none';
+  updateBadge();
+  if(v==='ytd' && !YTD.length) showToast('Nenhum arquivo YTD encontrado ainda. Use week_01.xlsx, week_02.xlsx, etc.');
+  render();
+}
+function buildFilters(){
+  const u=k=>[...new Set(D.map(r=>cleanText(r[k])).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const owners=[...new Set([...u('owner'),...REQUIRED_OWNERS].map(normalizeOwner).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR')); 
+  pop('fd',u('div'));pop('fb',u('branch'));pop('fo',owners);
+  pop('fs',u('stage'));pop('fm',u('modal'));pop('ff',u('mfrom'));pop('ft',u('mto'));
+}
+function pop(id,vals){
+  const s=$(id),cur=s.value;while(s.options.length>1)s.remove(1);
+  vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o)});
+  if(cur)s.value=cur;
+}
+function getF(){return{div:$('fd').value,branch:$('fb').value,owner:$('fo').value,stage:$('fs').value,modal:$('fm').value,st:$('fst').value,mfrom:$('ff').value,mto:$('ft').value,hot:$('fh').value,comm:$('fc').value,reefer:$('fr').value,project:$('fp').value}}
+function clearFilters(){['fd','fb','fo','fs','fm','fst','ff','ft','fh','fc','fr','fp'].forEach(id=>$(id).value='');render()}
+function filtered(src){
+  const f=getF(),base=src||D;
+  return base.filter(r=>
+    (!f.div||r.div===f.div)&&(!f.branch||r.branch===f.branch)&&
+    (!f.owner||normalizeOwner(r.owner)===normalizeOwner(f.owner))&&(!f.stage||r.stage===f.stage)&&
+    (!f.modal||r.modal===f.modal)&&(!f.mfrom||r.mfrom===f.mfrom)&&
+    (!f.mto||r.mto===f.mto)&&(!f.hot||(f.hot==='1'?r.hot:!r.hot))&&
+    (!f.comm||r.comm)&&(!f.reefer||r.reefer)&&(!f.project||r.project)&&
+    (!f.st||(f.st==='FCL'?(r.seaType==='FCL'||r.seaType==='FCL+LCL'):r.seaType==='LCL'||r.seaType==='FCL+LCL'))
+  );
+}
+function agg(d){
+  const tot=d.length,rev=d.reduce((s,r)=>s+r.rev,0);
+  const hot=d.filter(r=>r.hot),hotRev=hot.reduce((s,r)=>s+r.rev,0);
+  const comm=d.filter(r=>r.comm),commRev=comm.reduce((s,r)=>s+r.rev,0);
+  const reefer=d.filter(r=>r.reefer),reeferRev=reefer.reduce((s,r)=>s+r.rev,0);
+  const project=d.filter(r=>r.project),projectRev=project.reduce((s,r)=>s+r.rev,0);
+  const days=d.filter(r=>r.modified).map(r=>daysDiff(r.modified,TODAY)).filter(v=>v!=null&&v>=0);
+  const avgD=days.length?Math.round(days.reduce((a,b)=>a+b)/days.length):0;
+  const cl30=d.filter(r=>r.closeDate&&daysDiff(TODAY,r.closeDate)>=0&&daysDiff(TODAY,r.closeDate)<=30).length;
+  return{tot,rev,hot:hot.length,hotRev,comm:comm.length,commRev,reefer:reefer.length,reeferRev,project:project.length,projectRev,avgD,cl30,avgRev:tot?rev/tot:0,
+    teu:d.reduce((s,r)=>s+r.fcl,0),cbm:d.reduce((s,r)=>s+r.lcl,0),kg:d.reduce((s,r)=>s+r.airkg,0)};
+}
+function delta(now,prev){
+  if(prev==null||prev===0)return'';
+  const pct=Math.round((now-prev)/Math.abs(prev)*100);
+  return`<span class="delta ${pct>0?'up':pct<0?'dn':'neu'}">${pct>0?'+':''}${pct}% ${pct>0?'▲':'▼'}</span>`;
+}
+function render(){
+  if(!D.length)return;
+  const base=VIEW==='ytd'&&YTD.length?YTD:D;
+  const src=VIEW==='pipeline'?monthToDateRows(base):(VIEW==='semana'?previousWeekRows(D):base);
+  const data=filtered(src);
+  const prev=VIEW==='semana'&&P.length?filtered(previousWeekRows(P)):null;
+  updateBadge();
+  renderDash(data,prev,VIEW==='ytd');
+}
+function dc(id){if(CH[id]){CH[id].destroy();delete CH[id]}}
+
+function renderDash(data,prevData,isYTD){
+  const m=$('main');
+  let w=document.getElementById('dashWrap');
+  if(!w){w=document.createElement('div');w.id='dashWrap';m.appendChild(w)}
+  const n=agg(data),p=prevData?agg(prevData):null;
+
+  // Aggregations
+  const fclC=data.filter(r=>r.seaType==='FCL'||r.seaType==='FCL+LCL').length;
+  const lclC=data.filter(r=>r.seaType==='LCL'||r.seaType==='FCL+LCL').length;
+  const airC=data.filter(r=>r.modal==='Air').length;
+
+  const brM={};
+  data.forEach(r=>{if(!r.branch)return;if(!brM[r.branch])brM[r.branch]={opps:0,rev:0,fcl:0,lcl:0,kg:0,hot:0,comm:0,reefer:0,project:0};const b=brM[r.branch];b.opps++;b.rev+=r.rev;b.fcl+=r.fcl;b.lcl+=r.lcl;b.kg+=r.airkg;if(r.hot)b.hot++;if(r.comm)b.comm++;if(r.reefer)b.reefer++;if(r.project)b.project++});
+  const brE=Object.entries(brM).sort((a,b)=>b[1].rev-a[1].rev);
+
+  const divM={};data.forEach(r=>{if(!divM[r.div])divM[r.div]={rev:0,opps:0,hot:0};divM[r.div].rev+=r.rev;divM[r.div].opps++;if(r.hot)divM[r.div].hot++});
+  const divE=Object.entries(divM).sort((a,b)=>b[1].rev-a[1].rev);
+
+  const stM={},stC={'01 - Prospecting':'#534AB7','02 - Needs Analysis':'#7F77DD','03 - Propose/Quote':'#AFA9EC','04 - Contracting/Negotiation':'#185FA5'};
+  data.forEach(r=>{if(!stM[r.stage])stM[r.stage]={opps:0,rev:0};stM[r.stage].opps++;stM[r.stage].rev+=r.rev});
+  const stE=Object.entries(stM).sort((a,b)=>a[0].localeCompare(b[0]));
+  const maxSt=Math.max(...stE.map(e=>e[1].opps),1);
+
+  const modM={},modC={Sea:'#378ADD',Air:'#639922',Road:'#EF9F27','Road (A&S)':'#D4537E',Brokerage:'#888780'};
+  data.forEach(r=>{const m=r.modal||'Other';if(!modM[m])modM[m]=0;modM[m]++});
+  const modE=Object.entries(modM).sort((a,b)=>b[1]-a[1]);
+
+  const owM={};data.forEach(r=>{if(!owM[r.owner])owM[r.owner]={opps:0,rev:0,hot:0,comm:0,reefer:0,project:0,fcl:0,lcl:0,kg:0};const o=owM[r.owner];o.opps++;o.rev+=r.rev;if(r.hot)o.hot++;if(r.comm)o.comm++;if(r.reefer)o.reefer++;if(r.project)o.project++;o.fcl+=r.fcl;o.lcl+=r.lcl;o.kg+=r.airkg});
+  const owE=Object.entries(owM).sort((a,b)=>b[1].rev-a[1].rev).slice(0,15);
+  const maxRev=owE[0]?owE[0][1].rev:1,totRev=n.rev||1;
+
+  const rtM={};data.forEach(r=>{const k=r.mfrom+' → '+r.mto;if(!rtM[k])rtM[k]={opps:0,modal:r.modal};rtM[k].opps++});
+  const rtE=Object.entries(rtM).sort((a,b)=>b[1].opps-a[1].opps).slice(0,10);
+  const maxRt=rtE[0]?rtE[0][1].opps:1;
+
+  const hotOpps=data.filter(r=>r.hot).sort((a,b)=>b.rev-a.rev).slice(0,30);
+  const showOpps=hotOpps.length?hotOpps:data.sort((a,b)=>b.rev-a.rev).slice(0,40);
+  const reeferOpps=data.filter(r=>r.reefer).sort((a,b)=>b.rev-a.rev).slice(0,15);
+  const projectOpps=data.filter(r=>r.project).sort((a,b)=>b.rev-a.rev).slice(0,15);
+  const commOpps=data.filter(r=>r.comm).sort((a,b)=>b.rev-a.rev).slice(0,15);
+
+  const maxMtd=getMaxDataDate(D);
+  const startMtd=maxMtd?new Date(maxMtd.getFullYear(),maxMtd.getMonth(),1):null;
+  w.innerHTML=`
+  ${VIEW==='pipeline'&&maxMtd?`<div class="ytd-bar">🗓️ MONTH TO DATE — do dia 01 até ${fmtDateBR(maxMtd)} · visão de markets WON</div>`:''}
+  ${isYTD?`<div class="ytd-bar">📅 Visão YTD — ${(YTD.length||D.length).toLocaleString('pt-BR')} registros. Leitura automática dos arquivos week_01.xlsx, week_02.xlsx, etc.</div>`:''}
+  ${VIEW==='semana'?`<div class="ytd-bar">📌 SEMANA ANTERIOR — mostra automaticamente a semana anterior à maior semana encontrada em data/current.xlsx, usando a data WON/close da oportunidade.</div>`:''}
+  ${p?`<div style="background:var(--bl);border-radius:var(--r);padding:7px 13px;font-size:11px;color:var(--blue);margin-bottom:12px">↔ Comparação ativa vs arquivo data/previous.xlsx filtrado na respectiva semana anterior</div>`:''}
+  <div class="kgrid">
+    ${[{cls:'blue',l:'Total Markets',v:n.tot.toLocaleString('pt-BR'),s:'no pipeline',d:p?delta(n.tot,p.tot):''},
+       {cls:'green',l:'Receita Potencial',v:fBRL(n.rev),s:'revenue base',d:p?delta(n.rev,p.rev):''},
+       {cls:'amber',l:'HOT Markets',v:n.hot.toLocaleString('pt-BR'),s:fBRL(n.hotRev)+' receita HOT',d:p?delta(n.hot,p.hot):''},
+       {cls:'purple',l:'Ticket Médio',v:fBRL(n.avgRev),s:'receita / market',d:p?delta(n.avgRev,p.avgRev):''},
+       {cls:'teal',l:'Avg Days Open',v:n.avgD+'d',s:'desde última atualização',d:p?delta(n.avgD,p.avgD):''},
+       {cls:'red',l:'Fechando em 30d',v:n.cl30.toLocaleString('pt-BR'),s:'markets urgentes',d:p?delta(n.cl30,p.cl30):''}
+    ].map(k=>`<div class="kpi ${k.cls}"><div class="kl">${k.l}</div><div class="kv">${k.v}</div><div class="ks">${k.s}</div>${k.d}</div>`).join('')}
+  </div>
+  <div class="vkgrid">
+    <div class="vkpi"><div class="vk-icon" style="background:var(--bl)">🚢</div><div><div class="vkl">FCL Volume</div><div class="vkv" style="color:var(--blue)">${fNum(n.teu)} TEU</div><div class="vks">${fclC} opps FCL</div></div></div>
+    <div class="vkpi"><div class="vk-icon" style="background:#EEF2FF">📦</div><div><div class="vkl">LCL Volume</div><div class="vkv" style="color:#3730A3">${fNum(n.cbm)} CBM</div><div class="vks">${lclC} opps LCL</div></div></div>
+    <div class="vkpi"><div class="vk-icon" style="background:var(--gl)">✈️</div><div><div class="vkl">Air Volume</div><div class="vkv" style="color:var(--green)">${fNum(n.kg)} KG</div><div class="vks">${airC} opps Air</div></div></div>
+    <div class="vkpi"><div class="vk-icon" style="background:var(--al)">🔥</div><div><div class="vkl">HOT Revenue</div><div class="vkv" style="color:var(--amber)">${fBRL(n.hotRev)}</div><div class="vks">${n.hot} markets HOT</div></div></div>
+    <div class="vkpi"><div class="vk-icon" style="background:var(--tl)">❄️</div><div><div class="vkl">REEFER Revenue</div><div class="vkv" style="color:var(--teal)">${fBRL(n.reeferRev)}</div><div class="vks">${n.reefer} markets REEFER</div></div></div>
+    <div class="vkpi"><div class="vk-icon" style="background:var(--pl)">🚀</div><div><div class="vkl">P01 Revenue</div><div class="vkv" style="color:var(--purple)">${fBRL(n.projectRev)}</div><div class="vks">${n.project} markets P01</div></div></div>
+    <div class="vkpi"><div class="vk-icon" style="background:var(--al)">📦</div><div><div class="vkl">COMMODITIE Revenue</div><div class="vkv" style="color:var(--amber)">${fBRL(n.commRev)}</div><div class="vks">${n.comm} markets COMMODITIE</div></div></div>
+  </div>
+  <div class="row2">
+    <div class="card"><div class="ct">Revenue por division</div><div class="cs">Receita potencial (R$)</div><div style="position:relative;height:220px"><canvas id="cDiv" role="img" aria-label="Revenue by division">Revenue by division</canvas></div></div>
+    <div class="card"><div class="ct">Modal mix</div><div class="cs">% de markets</div><div style="position:relative;height:145px"><canvas id="cMod" role="img" aria-label="Modal mix">Modal</canvas></div><div id="cModLeg" style="margin-top:8px"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px"><div class="ct">Visão por Branch</div><div class="cs">Markets, volumes FCL (TEU) / LCL (CBM) / Air (KG) e receita por filial</div><div class="branch-grid" id="branchGrid"></div></div>
+  <div class="row3">
+    <div class="card"><div class="ct">Ranking de owners</div><div class="cs">Top 15 — clique para ver detalhes do owner</div>
+      <div style="overflow-x:auto"><table class="otbl"><thead><tr><th>#</th><th>Owner</th><th>Opps</th><th>HOT</th><th>Segmentos</th><th>FCL (TEU)</th><th>LCL (CBM)</th><th>Air (KG)</th><th>Receita</th><th>Share</th></tr></thead><tbody id="tOwn"></tbody></table></div>
+    </div>
+    <div class="card"><div class="ct">Top rotas</div><div class="cs">Corredores por volume</div><div id="cRoutes"></div></div>
+  </div>
+  <div class="row4">
+    <div class="card"><div class="ct">Revenue por stage</div><div class="cs">Receita potencial por estágio</div><div style="position:relative;height:180px"><canvas id="cStRev" role="img" aria-label="Revenue by stage">Revenue by stage</canvas></div></div>
+    <div class="card"><div class="ct">HOT por division</div><div class="cs">Volume HOT por divisão</div><div style="position:relative;height:180px"><canvas id="cHotD" role="img" aria-label="HOT by division">HOT by division</canvas></div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="ct">Markets ${hotOpps.length?'HOT 🔥':'(top por receita)'}</div>
+    <div class="cs">Clique em qualquer card para ver detalhes completos</div>
+    <div class="opp-grid" id="oppGrid"></div>
+  </div>
+  <div class="special-grid">
+    <div class="card"><div class="ct">Markets REEFER ❄️</div><div class="cs">${reeferOpps.length} markets filtradas como Reefer</div><div class="opp-grid" id="reeferGrid"></div></div>
+    <div class="card"><div class="ct">Markets P01 🚀</div><div class="cs">${projectOpps.length} markets marcadas como Projetos</div><div class="opp-grid" id="projectGrid"></div></div>
+    <div class="card"><div class="ct">Markets COMMODITIE 📦</div><div class="cs">${commOpps.length} markets marcadas como Commoditie</div><div class="opp-grid" id="commGrid"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="ct">WONs por Account</div>
+    <div class="cs">Todas as oportunidades fechadas por account, ordenadas pelo maior volume total. Inclui Payment Type e Claim Type por oportunidade.</div>
+    <div id="accountWonList" style="max-height:680px;overflow:auto"></div>
+  </div>`;
+
+  // Branch cards
+  document.getElementById('branchGrid').innerHTML=brE.map(([nm,v])=>`
+    <div class="branch-card">
+      <div class="bc-name">${nm}</div>
+      <div class="bc-row"><span class="bc-label">Markets</span><span class="bc-val">${v.opps.toLocaleString('pt-BR')}</span></div>
+      <div class="bc-row"><span class="bc-label">Receita</span><span class="bc-val" style="color:var(--green)">${fBRL(v.rev)}</span></div>
+      <div class="bc-row"><span class="bc-label"><span class="bc-pill pill-fcl">FCL</span> TEU</span><span class="bc-val">${fNum(v.fcl)}</span></div>
+      <div class="bc-row"><span class="bc-label"><span class="bc-pill pill-lcl">LCL</span> CBM</span><span class="bc-val">${fNum(v.lcl)}</span></div>
+      <div class="bc-row"><span class="bc-label"><span class="bc-pill pill-air">AIR</span> KG</span><span class="bc-val">${fNum(v.kg)}</span></div>
+      ${v.hot?`<div class="bc-row"><span class="bc-label">HOT</span><span class="hotb">🔥 ${v.hot}</span></div>`:''}
+      ${v.reefer?`<div class="bc-row"><span class="bc-label">REEFER</span><span class="segpill seg-reefer">❄️ ${v.reefer}</span></div>`:''}
+      ${v.project?`<div class="bc-row"><span class="bc-label">P01</span><span class="segpill seg-p01">🚀 ${v.project}</span></div>`:''}
+      ${v.comm?`<div class="bc-row"><span class="bc-label">COMMODITIE</span><span class="segpill seg-comm">📦 ${v.comm}</span></div>`:''}
+    </div>`).join('');
+
+  // Charts
+  dc('cDiv');
+  CH['cDiv']=new Chart($('cDiv'),{type:'bar',data:{labels:divE.map(e=>e[0]),datasets:[{label:'R$M',data:divE.map(e=>Math.round(e[1].rev/1e6)),backgroundColor:divE.map(e=>e[0]==='Sea'?'#378ADD':e[0]==='Air'?'#639922':e[0].includes('Road')?'#EF9F27':'#9CA3AF'),borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'R$ '+c.parsed.x+'M'}}},scales:{x:{ticks:{callback:v=>'R$'+v+'M',font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},y:{ticks:{font:{size:10}}}}}});
+
+
+
+  dc('cMod');
+  CH['cMod']=new Chart($('cMod'),{type:'doughnut',data:{labels:modE.map(e=>e[0]),datasets:[{data:modE.map(e=>e[1]),backgroundColor:modE.map(e=>modC[e[0]]||'#B4B2A9'),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+c.parsed.toLocaleString('pt-BR')}}}}});
+  document.getElementById('cModLeg').innerHTML='<div style="display:flex;flex-wrap:wrap;gap:7px">'+modE.map(e=>`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--t2)"><span style="width:9px;height:9px;border-radius:2px;background:${modC[e[0]]||'#B4B2A9'};flex-shrink:0"></span>${e[0]} ${Math.round(e[1]/(n.tot||1)*100)}%</span>`).join('')+'</div>';
+
+  document.getElementById('tOwn').innerHTML=owE.map(([nm,v],i)=>{
+    const pct=Math.round(v.rev/totRev*100),bw=Math.round(v.rev/maxRev*65);
+    return`<tr class="clickable" onclick="openOwner('${nm.replace(/'/g,"\\'")}')"><td style="color:var(--t3)">${i+1}</td><td style="font-weight:600">${nm}</td><td style="color:var(--t2)">${v.opps}</td><td>${v.hot?`<span class="hotb">🔥 ${v.hot}</span>`:''}</td><td>${[v.reefer?`<span class="segpill seg-reefer">❄️ ${v.reefer}</span>`:'',v.project?`<span class="segpill seg-p01">🚀 ${v.project}</span>`:'',v.comm?`<span class="segpill seg-comm">📦 ${v.comm}</span>`:''].filter(Boolean).join(' ')}</td><td style="color:var(--blue);font-size:11px">${fNum(v.fcl)}</td><td style="color:#3730A3;font-size:11px">${fNum(v.lcl)}</td><td style="color:var(--green);font-size:11px">${fNum(v.kg)}</td><td style="color:var(--blue);font-weight:600">${fBRL(v.rev)}</td><td><span class="rbar" style="width:${bw}px"></span>${pct}%</td></tr>`;
+  }).join('');
+
+  document.getElementById('cRoutes').innerHTML=rtE.map(([rt,v])=>`<div class="rr"><div class="rn">${rt}</div><div class="rbg"><div class="rf" style="width:${Math.round(v.opps/maxRt*100)}%;background:${modC[v.modal]||'#888'}"></div></div><div class="rc">${v.opps} opp</div></div>`).join('');
+
+  dc('cStRev');
+  CH['cStRev']=new Chart($('cStRev'),{type:'bar',data:{labels:stE.map(([s])=>s.replace(/^\d+ - /,'')),datasets:[{label:'R$M',data:stE.map(([,v])=>Math.round(v.rev/1e6)),backgroundColor:stE.map(([s])=>stC[s]||'#7F77DD'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'R$ '+c.parsed.y+'M'}}},scales:{y:{ticks:{callback:v=>'R$'+v+'M',font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},x:{ticks:{font:{size:10}}}}}});
+
+  const hDE=divE.filter(e=>e[1].hot>0);
+  dc('cHotD');
+  CH['cHotD']=new Chart($('cHotD'),{type:'bar',data:{labels:hDE.map(e=>e[0]),datasets:[{label:'HOT',data:hDE.map(e=>e[1].hot),backgroundColor:hDE.map(e=>e[0]==='Sea'?'#378ADD':e[0]==='Air'?'#639922':'#EF9F27'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},x:{ticks:{font:{size:10}}}}}});
+
+  document.getElementById('oppGrid').innerHTML=showOpps.map(r=>mkOppCard(r)).join('');
+  document.getElementById('reeferGrid').innerHTML=reeferOpps.length?reeferOpps.map(r=>mkOppCard(r,'reefer-card')).join(''):'<div style="font-size:12px;color:var(--t3);padding:10px">Sem markets Reefer no filtro atual.</div>';
+  document.getElementById('projectGrid').innerHTML=projectOpps.length?projectOpps.map(r=>mkOppCard(r,'project-card')).join(''):'<div style="font-size:12px;color:var(--t3);padding:10px">Sem markets P01 no filtro atual.</div>';
+  document.getElementById('commGrid').innerHTML=commOpps.length?commOpps.map(r=>mkOppCard(r,'comm-card')).join(''):'<div style="font-size:12px;color:var(--t3);padding:10px">Sem markets Commoditie no filtro atual.</div>';
+  document.getElementById('accountWonList').innerHTML=mkAccountWonList(data);
+}
+
+function mkAccountWonList(data){
+  const accM={};
+  data.forEach(r=>{
+    const a=r.account||'Account não informado';
+    if(!accM[a])accM[a]={opps:[],rev:0,fcl:0,lcl:0,kg:0,vol:0,hot:0,comm:0,reefer:0,project:0};
+    const x=accM[a];x.opps.push(r);x.rev+=r.rev;x.fcl+=r.fcl;x.lcl+=r.lcl;x.kg+=r.airkg;x.vol+=volumeValue(r);
+    if(r.hot)x.hot++;if(r.comm)x.comm++;if(r.reefer)x.reefer++;if(r.project)x.project++;
+  });
+  const accounts=Object.entries(accM).sort((a,b)=>b[1].vol-a[1].vol || b[1].rev-a[1].rev);
+  if(!accounts.length)return '<div style="font-size:12px;color:var(--t3);padding:10px">Sem WONs no filtro atual.</div>';
+  return accounts.map(([acc,v])=>{
+    const rows=v.opps.sort((a,b)=>volumeValue(b)-volumeValue(a)||b.rev-a.rev).map(r=>`<tr>
+      <td style="font-weight:500;min-width:220px">${esc(r.opp)}</td>
+      <td>${esc(r.owner)}</td>
+      <td>${esc(r.branch)||'—'}</td>
+      <td>${mkTags(r)}</td>
+      <td style="color:var(--blue);font-weight:600;text-align:right">${fNum(r.fcl)}</td>
+      <td style="color:#3730A3;font-weight:600;text-align:right">${fNum(r.lcl)}</td>
+      <td style="color:var(--green);font-weight:600;text-align:right">${fNum(r.airkg)}</td>
+      <td style="color:var(--green);font-weight:700;text-align:right">${fBRL(r.rev)}</td>
+      <td>${esc(r.paymentType)||'—'}</td>
+      <td>${esc(r.claimType)||'—'}</td>
+      <td>${esc((r.stage||'').replace(/^\d+ - /,''))||'—'}</td>
+    </tr>`).join('');
+    return `<details open style="border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;background:var(--surface)">
+      <summary style="cursor:pointer;padding:10px 12px;background:var(--s2);font-size:12px;font-weight:700;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span style="flex:1;min-width:260px">${esc(acc)}</span>
+        <span>${v.opps.length} opps</span>
+        <span style="color:var(--blue)">${fNum(v.fcl)} TEU</span>
+        <span style="color:#3730A3">${fNum(v.lcl)} CBM</span>
+        <span style="color:var(--green)">${fNum(v.kg)} KG</span>
+        <span style="color:var(--green)">${fBRL(v.rev)}</span>
+        ${v.hot?`<span class="hotb">🔥 ${v.hot}</span>`:''}
+        ${v.reefer?`<span class="segpill seg-reefer">❄️ ${v.reefer}</span>`:''}
+        ${v.project?`<span class="segpill seg-p01">🚀 ${v.project}</span>`:''}
+        ${v.comm?`<span class="segpill seg-comm">📦 ${v.comm}</span>`:''}
+      </summary>
+      <div style="overflow-x:auto">
+        <table class="otbl"><thead><tr><th>Opportunity</th><th>Owner</th><th>Branch</th><th>Info</th><th>FCL</th><th>LCL</th><th>Air</th><th>Receita</th><th>Payment Type</th><th>Claim Type</th><th>Stage</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>
+    </details>`;
+  }).join('');
+}
+
+function mkTags(r){
+  const t=[];
+  if(r.hot)t.push(`<span class="hotb">🔥 HOT</span>`);
+  if(r.comm)t.push(`<span class="segpill seg-comm">📦 COMMODITIE</span>`);
+  if(r.reefer)t.push(`<span class="segpill seg-reefer">❄️ REEFER</span>`);
+  if(r.project)t.push(`<span class="segpill seg-p01">🚀 P01</span>`);
+  if(r.modal==='Sea'){t.push(`<span class="bc-pill pill-sea">Sea</span>`);if(r.seaType)t.push(`<span class="bc-pill ${r.seaType.startsWith('FCL')?'pill-fcl':'pill-lcl'}">${r.seaType}</span>`);}
+  else if(r.modal==='Air')t.push(`<span class="bc-pill pill-air">Air</span>`);
+  else if(r.modal)t.push(`<span class="bc-pill" style="background:var(--al);color:var(--amber)">${r.modal}</span>`);
+  return t.join('');
+}
+function mkVol(r){return r.modal==='Air'&&r.airkg>0?fNum(r.airkg)+' KG':r.fcl>0?fNum(r.fcl)+' TEU':r.lcl>0?fNum(r.lcl)+' CBM':''}
+function mkOppCard(r,extraClass=''){
+  const safe=JSON.stringify(r).replace(/"/g,'&quot;');
+  const vol=mkVol(r);
+  return`<div class="opp-card ${r.hot?'hot-card':''} ${extraClass}" onclick='openOpp(${safe})'>
+    <div class="oc-name">${r.opp.length>65?r.opp.substring(0,65)+'…':r.opp}</div>
+    <div class="oc-tags">${mkTags(r)}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="oc-rev">${fBRL(r.rev)}</div>${vol?`<div class="oc-meta">${vol}</div>`:''}
+    </div>
+    <div class="oc-meta">${r.owner}${r.branch?' · '+r.branch:''} · ${r.stage.replace(/^\d+ - /,'')}</div>
+  </div>`;
+}
+
+function openOwner(name){
+  const src=VIEW==='ytd'&&YTD.length?YTD:D;
+  const od=filtered(src).filter(r=>normalizeOwner(r.owner)===normalizeOwner(name));
+  const prevOd=P.length?filtered(P).filter(r=>normalizeOwner(r.owner)===normalizeOwner(name)):null;
+  const n=agg(od),p=prevOd?agg(prevOd):null;
+  const stM={};od.forEach(r=>{if(!stM[r.stage])stM[r.stage]={opps:0,rev:0};stM[r.stage].opps++;stM[r.stage].rev+=r.rev});
+  const stE=Object.entries(stM).sort((a,b)=>a[0].localeCompare(b[0]));
+  const rtM={};od.forEach(r=>{const k=r.mfrom+' → '+r.mto;if(!rtM[k])rtM[k]=0;rtM[k]++});
+  const rtTop=Object.entries(rtM).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const initials=name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const oppsList=od.sort((a,b)=>b.rev-a.rev).slice(0,25);
+  const stC={'01 - Prospecting':'#534AB7','02 - Needs Analysis':'#7F77DD','03 - Propose/Quote':'#AFA9EC','04 - Contracting/Negotiation':'#185FA5'};
+
+  $('ownerModalContent').innerHTML=`
+  <div class="modal-hdr">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--bl);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${initials}</div>
+      <div><div class="modal-title">${name}</div><div style="font-size:12px;color:var(--t2)">${od.length} markets</div></div>
+    </div>
+    <button class="close-btn" onclick="$('ownerModal').classList.remove('open')">✕</button>
+  </div>
+  <div class="owner-kgrid">
+    <div class="owner-kpi"><div class="okl">Receita</div><div class="okv" style="color:var(--green)">${fBRL(n.rev)}</div>${p?delta(n.rev,p.rev):''}</div>
+    <div class="owner-kpi"><div class="okl">HOT</div><div class="okv" style="color:var(--amber)">🔥 ${n.hot}</div>${p?delta(n.hot,p.hot):''}</div>
+    <div class="owner-kpi"><div class="okl">REEFER</div><div class="okv" style="color:var(--teal)">❄️ ${n.reefer}</div>${p?delta(n.reefer,p.reefer):''}</div>
+    <div class="owner-kpi"><div class="okl">P01</div><div class="okv" style="color:var(--purple)">🚀 ${n.project}</div>${p?delta(n.project,p.project):''}</div>
+    <div class="owner-kpi"><div class="okl">COMMODITIE</div><div class="okv" style="color:var(--amber)">📦 ${n.comm}</div>${p?delta(n.comm,p.comm):''}</div>
+    <div class="owner-kpi"><div class="okl">Avg Days Open</div><div class="okv">${n.avgD}d</div>${p?delta(n.avgD,p.avgD):''}</div>
+    <div class="owner-kpi"><div class="okl">FCL (TEU)</div><div class="okv" style="color:var(--blue)">${fNum(n.teu)}</div></div>
+    <div class="owner-kpi"><div class="okl">LCL (CBM)</div><div class="okv" style="color:#3730A3">${fNum(n.cbm)}</div></div>
+    <div class="owner-kpi"><div class="okl">Air (KG)</div><div class="okv" style="color:var(--green)">${fNum(n.kg)}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div>
+      <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:var(--t2);text-transform:uppercase;letter-spacing:.05em">Pipeline por Stage</div>
+      ${stE.map(([s,v])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:2px;background:${stC[s]||'#7F77DD'};flex-shrink:0"></span>${s.replace(/^\d+ - /,'')}</span><span><strong>${v.opps}</strong> · ${fBRL(v.rev)}</span></div>`).join('')}
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:var(--t2);text-transform:uppercase;letter-spacing:.05em">Top Rotas</div>
+      ${rtTop.map(([rt,c])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="font-weight:500">${rt}</span><span style="color:var(--t2)">${c} opp</span></div>`).join('')}
+    </div>
+  </div>
+  <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:var(--t2);text-transform:uppercase;letter-spacing:.05em">Markets (top 25)</div>
+  <div style="display:flex;flex-direction:column;gap:5px;max-height:320px;overflow-y:auto">
+    ${oppsList.map(r=>`<div style="background:var(--s2);border-radius:var(--r);padding:8px 11px">
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:500;flex:1;line-height:1.3">${r.opp.length>80?r.opp.substring(0,80)+'…':r.opp}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--green);white-space:nowrap">${fBRL(r.rev)}</span>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+        ${mkTags(r)}
+        ${mkVol(r)?`<span style="font-size:10px;color:var(--t2)">${mkVol(r)}</span>`:''}
+        <span style="font-size:10px;color:var(--t3)">${r.stage.replace(/^\d+ - /,'')}</span>
+        ${r.branch?`<span style="font-size:10px;color:var(--t3)">${r.branch}</span>`:''}
+      </div>
+    </div>`).join('')}
+  </div>`;
+  $('ownerModal').classList.add('open');
+}
+
+function openOpp(r){
+  if(typeof r==='string')r=JSON.parse(r);
+  $('oppModalContent').innerHTML=`
+  <div class="modal-hdr">
+    <div class="modal-title">${r.opp}</div>
+    <button class="close-btn" onclick="$('oppModal').classList.remove('open')">✕</button>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${mkTags(r)}</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+    <div class="owner-kpi"><div class="okl">Receita</div><div class="okv" style="color:var(--green)">${fBRL(r.rev)}</div></div>
+    <div class="owner-kpi"><div class="okl">Owner</div><div class="okv" style="font-size:14px">${r.owner}</div></div>
+    <div class="owner-kpi"><div class="okl">Branch</div><div class="okv" style="font-size:14px">${r.branch||'—'}</div></div>
+    <div class="owner-kpi"><div class="okl">Account</div><div class="okv" style="font-size:13px">${r.account||'—'}</div></div>
+    <div class="owner-kpi"><div class="okl">Payment Type</div><div class="okv" style="font-size:13px">${r.paymentType||'—'}</div></div>
+    <div class="owner-kpi"><div class="okl">Claim Type</div><div class="okv" style="font-size:13px">${r.claimType||'—'}</div></div>
+    <div class="owner-kpi"><div class="okl">Stage</div><div class="okv" style="font-size:13px">${r.stage.replace(/^\d+ - /,'')}</div></div>
+    <div class="owner-kpi"><div class="okl">Rota</div><div class="okv" style="font-size:14px">${r.mfrom} → ${r.mto}</div></div>
+    <div class="owner-kpi"><div class="okl">Division</div><div class="okv" style="font-size:14px">${r.div}</div></div>
+    ${r.comm?`<div class="owner-kpi"><div class="okl">COMMODITIE</div><div class="okv" style="font-size:14px">Sim</div></div>`:''}
+    ${r.reefer?`<div class="owner-kpi"><div class="okl">REEFER</div><div class="okv" style="font-size:14px">Sim</div></div>`:''}
+    ${r.project?`<div class="owner-kpi"><div class="okl">PROJETOS</div><div class="okv" style="font-size:14px">P01</div></div>`:''}
+    ${r.fcl>0?`<div class="owner-kpi"><div class="okl">FCL (TEU)</div><div class="okv" style="color:var(--blue)">${fNum(r.fcl)}</div></div>`:''}
+    ${r.lcl>0?`<div class="owner-kpi"><div class="okl">LCL (CBM)</div><div class="okv" style="color:#3730A3">${fNum(r.lcl)}</div></div>`:''}
+    ${r.airkg>0?`<div class="owner-kpi"><div class="okl">Air (KG)</div><div class="okv" style="color:var(--green)">${fNum(r.airkg)}</div></div>`:''}
+    ${r.closeDate?`<div class="owner-kpi"><div class="okl">Close Date</div><div class="okv" style="font-size:13px">${new Date(r.closeDate).toLocaleDateString('pt-BR')}</div></div>`:''}
+    ${r.modal==='Sea'&&r.seaType?`<div class="owner-kpi"><div class="okl">Sea Type</div><div class="okv"><span class="bc-pill ${r.seaType.startsWith('FCL')?'pill-fcl':'pill-lcl'}">${r.seaType}</span></div></div>`:''}
+  </div>`;
+  $('oppModal').classList.add('open');
+}
+
+$('ownerModal').addEventListener('click',e=>{if(e.target===$('ownerModal'))$('ownerModal').classList.remove('open')});
+$('oppModal').addEventListener('click',e=>{if(e.target===$('oppModal'))$('oppModal').classList.remove('open')});
+
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:24px;right:24px;background:#1a1d23;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;transition:opacity .3s';document.body.appendChild(t)}
+  t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2800);
+}
+</script>
+</body>
+</html>
